@@ -73,7 +73,7 @@ export const JobList = () => {
       </div>
       
       {jobs.map((job) => (
-        <JobCard key={job.id} {...job} />
+        <JobCard key={job.id} id={job.id} {...job} />
       ))}
     </div>
   );
