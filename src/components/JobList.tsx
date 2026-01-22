@@ -1,124 +1,80 @@
 import { JobCard } from "./JobCard";
-import { useJobs } from "@/contexts/JobsContext";
 
-interface JobListProps {
-  searchTerm?: string;
-  locationFilter?: string;
-  locationFilterArray?: string[];
-  requirementsFilter?: string;
-}
+const jobs = [
+  {
+    id: 1,
+    title: "Desenvolvedor Full Stack Sênior",
+    company: "Tech Solutions",
+    location: "São Paulo, SP",
+    type: "Tempo integral",
+    department: "Tecnologia",
+    postedDate: "Há 2 dias",
+    description: "Buscamos um desenvolvedor full stack experiente para liderar projetos desafiadores usando React, Node.js e PostgreSQL.",
+  },
+  {
+    id: 2,
+    title: "Designer de Produto",
+    company: "Creative Studio",
+    location: "Remoto",
+    type: "Tempo integral",
+    department: "Design",
+    postedDate: "Há 1 semana",
+    description: "Procuramos um designer criativo para criar experiências de usuário excepcionais para nossos produtos digitais.",
+  },
+  {
+    id: 3,
+    title: "Gerente de Marketing Digital",
+    company: "Marketing Pro",
+    location: "Rio de Janeiro, RJ",
+    type: "Tempo integral",
+    department: "Marketing",
+    postedDate: "Há 3 dias",
+    description: "Oportunidade para liderar estratégias de marketing digital e crescimento para marcas estabelecidas.",
+  },
+  {
+    id: 4,
+    title: "Analista de Dados",
+    company: "Data Insights",
+    location: "Belo Horizonte, MG",
+    type: "Híbrido",
+    department: "Tecnologia",
+    postedDate: "Há 5 dias",
+    description: "Junte-se à nossa equipe para transformar dados em insights valiosos usando Python, SQL e ferramentas de BI.",
+  },
+  {
+    id: 5,
+    title: "Desenvolvedor Frontend",
+    company: "Web Innovations",
+    location: "Curitiba, PR",
+    type: "Remoto",
+    department: "Tecnologia",
+    postedDate: "Há 4 dias",
+    description: "Estamos procurando um desenvolvedor frontend apaixonado por criar interfaces modernas com React e TypeScript.",
+  },
+  {
+    id: 6,
+    title: "Especialista em UX/UI",
+    company: "Design Hub",
+    location: "Porto Alegre, RS",
+    type: "Tempo integral",
+    department: "Design",
+    postedDate: "Há 1 semana",
+    description: "Oportunidade para moldar a experiência do usuário de produtos digitais inovadores em um ambiente colaborativo.",
+  },
+];
 
-export const JobList = ({ 
-  searchTerm = "", 
-  locationFilter = "",
-  locationFilterArray = [],
-  requirementsFilter = ""
-}: JobListProps) => {
-  const { jobs, isLoading } = useJobs();
-
-  // Filtrar apenas Oportunidades ativas para o site público
-  let activeJobs = jobs.filter(job => job.status === "active");
-
-  // Aplicar filtro de busca
-  if (searchTerm) {
-    activeJobs = activeJobs.filter(job => 
-      job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      job.description.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }
-
-  // Aplicar filtro de localização
-  // Prioridade: checkboxes do sidebar primeiro, depois campo de busca
-  if (locationFilterArray.length > 0) {
-    activeJobs = activeJobs.filter(job => 
-      locationFilterArray.includes(job.location)
-    );
-  } else if (locationFilter) {
-    activeJobs = activeJobs.filter(job => 
-      job.location.toLowerCase().includes(locationFilter.toLowerCase())
-    );
-  }
-
-  // Aplicar filtro de requisitos (busca por texto livre)
-  if (requirementsFilter.trim()) {
-    const searchTerms = requirementsFilter.toLowerCase().split(',').map(term => term.trim()).filter(term => term);
-    activeJobs = activeJobs.filter(job => {
-      if (!job.requirements) return false;
-      const reqText = job.requirements.toLowerCase();
-      // A oportunidade deve conter pelo menos um dos termos de busca
-      return searchTerms.some(term => reqText.includes(term));
-    });
-  }
-
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-foreground">
-            Carregando Oportunidades...
-          </h2>
-        </div>
-        <div className="space-y-4">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="p-6 bg-card border border-border rounded-lg animate-pulse">
-              <div className="flex items-start gap-3 mb-3">
-                <div className="w-12 h-12 bg-secondary rounded-lg"></div>
-                <div className="flex-1">
-                  <div className="h-6 bg-secondary rounded mb-2"></div>
-                  <div className="h-4 bg-secondary rounded w-1/3"></div>
-                </div>
-              </div>
-              <div className="flex gap-2 mb-3">
-                <div className="h-6 bg-secondary rounded w-20"></div>
-                <div className="h-6 bg-secondary rounded w-24"></div>
-              </div>
-              <div className="h-4 bg-secondary rounded mb-4"></div>
-              <div className="flex gap-4">
-                <div className="h-4 bg-secondary rounded w-32"></div>
-                <div className="h-4 bg-secondary rounded w-24"></div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
+export const JobList = () => {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-foreground">
-          {activeJobs.length} Oportunidades disponíveis
+          {jobs.length} vagas disponíveis
         </h2>
       </div>
       
-      {activeJobs.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="text-muted-foreground mb-4">
-            <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6" />
-            </svg>
-          </div>
-          <h3 className="text-lg font-semibold text-foreground mb-2">
-            Nenhuma oportunidade disponível no momento
-          </h3>
-          <p className="text-muted-foreground">
-            Volte em breve para ver novas oportunidades!
-          </p>
-        </div>
-      ) : (
-        activeJobs.map((job) => (
-          <JobCard 
-            key={job.id} 
-            id={job.id} 
-            title={job.title}
-            location={job.location}
-            department="Tecnologia" // Mapear para um campo padrão
-            postedDate={new Date(job.postedAt).toLocaleDateString('pt-BR')}
-            description={job.description}
-          />
-        ))
-      )}
+      {jobs.map((job) => (
+        <JobCard key={job.id} id={job.id} {...job} />
+      ))}
     </div>
   );
 };

@@ -1,134 +1,80 @@
-import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   ArrowLeft,
   MapPin,
   Briefcase,
   Clock,
+  Building2,
   Share2,
+  Bookmark,
+  DollarSign,
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useJobs } from "@/contexts/JobsContext";
-import { auth } from "@/lib/firebase";
-import { onAuthStateChanged, User } from "firebase/auth";
+
+// Mock data - in a real app, this would come from an API/database
+const jobData = {
+  id: "1",
+  title: "Desenvolvedor Full Stack Sênior",
+  company: "Tech Solutions",
+  companyLogo: "TS",
+  location: "São Paulo, SP",
+  workMode: "Híbrido",
+  type: "Tempo integral",
+  department: "Tecnologia",
+  salary: "R$ 10.000 - R$ 15.000",
+  postedDate: "Há 2 dias",
+  applicants: 45,
+  description: `Estamos buscando um Desenvolvedor Full Stack Sênior para se juntar à nossa equipe de engenharia. 
+  
+  Você será responsável por desenvolver e manter aplicações web de alta qualidade, trabalhando com tecnologias modernas e em um ambiente colaborativo.`,
+  
+  responsibilities: [
+    "Desenvolver e manter aplicações web usando React, Node.js e PostgreSQL",
+    "Colaborar com designers e product managers para criar experiências excepcionais",
+    "Escrever código limpo, testável e bem documentado",
+    "Participar de code reviews e contribuir para melhorias técnicas",
+    "Mentorar desenvolvedores júnior e mid-level",
+  ],
+  
+  requirements: [
+    "5+ anos de experiência com desenvolvimento full stack",
+    "Expertise em React, TypeScript e Node.js",
+    "Experiência com bancos de dados relacionais (PostgreSQL, MySQL)",
+    "Conhecimento sólido de Git e metodologias ágeis",
+    "Excelentes habilidades de comunicação",
+    "Inglês intermediário ou avançado",
+  ],
+  
+  niceToHave: [
+    "Experiência com AWS ou Azure",
+    "Conhecimento de Docker e Kubernetes",
+    "Contribuições para projetos open source",
+    "Experiência com testes automatizados (Jest, Cypress)",
+  ],
+  
+  benefits: [
+    "Vale refeição e alimentação",
+    "Plano de saúde e odontológico",
+    "Gympass",
+    "Day off no aniversário",
+    "Auxílio home office",
+    "Budget para cursos e livros",
+    "Stock options",
+    "Horário flexível",
+  ],
+  
+  aboutCompany: `A Tech Solutions é uma empresa líder em desenvolvimento de software, com mais de 10 anos de experiência no mercado. 
+  
+  Trabalhamos com clientes nacionais e internacionais, criando soluções inovadoras que impactam milhões de usuários. Nossa cultura valoriza a inovação, colaboração e o desenvolvimento contínuo de nossos profissionais.`,
+};
 
 const JobDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getJobById, isLoading } = useJobs();
-  const { toast } = useToast();
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  const job = id ? getJobById(id) : null;
-
-  const handleShare = async () => {
-    if (!job || !id) return;
-
-    const url = `${window.location.origin}/portal/jobs/${id}`;
-    const shareData = {
-      title: job.title,
-      text: `Confira esta oportunidade: ${job.title} - ${job.location}`,
-      url: url,
-    };
-
-    try {
-      // Tentar usar a Web Share API se disponível (principalmente em dispositivos móveis)
-      if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
-        await navigator.share(shareData);
-        toast({
-          title: "Compartilhado!",
-          description: "A oportunidade foi compartilhada com sucesso.",
-        });
-      } else {
-        // Fallback: copiar URL para a área de transferência
-        await navigator.clipboard.writeText(url);
-        toast({
-          title: "Link copiado!",
-          description: "O link da oportunidade foi copiado para a área de transferência.",
-        });
-      }
-    } catch (error) {
-      // Se o usuário cancelar o compartilhamento, não mostrar erro
-      if (error instanceof Error && error.name !== "AbortError") {
-        console.error("Erro ao compartilhar:", error);
-        // Tentar fallback de copiar
-        try {
-          await navigator.clipboard.writeText(url);
-          toast({
-            title: "Link copiado!",
-            description: "O link da oportunidade foi copiado para a área de transferência.",
-          });
-        } catch (clipboardError) {
-          toast({
-            title: "Erro ao compartilhar",
-            description: "Não foi possível compartilhar a oportunidade. Tente novamente.",
-            variant: "destructive",
-          });
-        }
-      }
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <main className="container mx-auto px-4 py-8">
-          <div className="animate-pulse">
-            <div className="h-8 bg-secondary rounded w-32 mb-6"></div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2 space-y-6">
-                <div className="h-64 bg-secondary rounded-lg"></div>
-                <div className="h-32 bg-secondary rounded-lg"></div>
-                <div className="h-48 bg-secondary rounded-lg"></div>
-              </div>
-              <div className="space-y-6">
-                <div className="h-32 bg-secondary rounded-lg"></div>
-                <div className="h-48 bg-secondary rounded-lg"></div>
-              </div>
-            </div>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-  if (!job) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <main className="container mx-auto px-4 py-8">
-          <Button
-            variant="ghost"
-            className="mb-6 text-muted-foreground hover:text-foreground"
-            onClick={() => navigate("/")}
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Voltar para Oportunidades
-          </Button>
-          <Alert variant="destructive" className="max-w-md">
-            <AlertDescription>
-              Oportunidade não encontrada ou não está mais disponível.
-            </AlertDescription>
-          </Alert>
-        </main>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -141,7 +87,7 @@ const JobDetail = () => {
           onClick={() => navigate("/")}
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Voltar para Oportunidades
+          Voltar para vagas
         </Button>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -151,16 +97,34 @@ const JobDetail = () => {
             <Card className="p-6 border-border bg-card">
               <div className="flex items-start gap-4 mb-4">
                 <div className="w-16 h-16 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
-                  <Briefcase className="w-8 h-8 text-primary" />
+                  <span className="text-2xl font-bold text-primary">
+                    {jobData.companyLogo}
+                  </span>
                 </div>
                 <div className="flex-1">
                   <h1 className="text-3xl font-bold mb-2 text-foreground">
-                    {job.title}
+                    {jobData.title}
                   </h1>
+                  <div className="flex items-center gap-2 text-lg text-muted-foreground mb-3">
+                    <Building2 className="w-5 h-5" />
+                    <span>{jobData.company}</span>
+                  </div>
                   <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <MapPin className="w-4 h-4" />
-                      <span>{job.location}</span>
+                      <span>{jobData.location}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Briefcase className="w-4 h-4" />
+                      <span>{jobData.workMode}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-4 h-4" />
+                      <span>{jobData.type}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <DollarSign className="w-4 h-4" />
+                      <span>{jobData.salary}</span>
                     </div>
                   </div>
                 </div>
@@ -168,110 +132,131 @@ const JobDetail = () => {
 
               <div className="flex flex-wrap gap-2 mb-4">
                 <Badge variant="secondary" className="bg-secondary text-secondary-foreground">
-                  Tecnologia
+                  {jobData.department}
+                </Badge>
+                <Badge variant="outline" className="border-border text-muted-foreground">
+                  {jobData.type}
                 </Badge>
               </div>
 
               <div className="flex items-center justify-between pt-4 border-t border-border">
                 <span className="text-sm text-muted-foreground">
-                  Publicado em {new Date(job.postedAt).toLocaleDateString('pt-BR')} • {job.applications} candidatos
+                  Publicado {jobData.postedDate} • {jobData.applicants} candidatos
                 </span>
-                <Button 
-                  variant="outline" 
-                  size="icon"
-                  onClick={handleShare}
-                  title="Compartilhar oportunidade"
-                >
-                  <Share2 className="w-4 h-4" />
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="icon">
+                    <Share2 className="w-4 h-4" />
+                  </Button>
+                  <Button variant="outline" size="icon">
+                    <Bookmark className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
             </Card>
 
             {/* Description */}
             <Card className="p-6 border-border bg-card">
               <h2 className="text-2xl font-semibold mb-4 text-foreground">
-                Sobre a oportunidade
+                Sobre a vaga
               </h2>
               <p className="text-muted-foreground whitespace-pre-line leading-relaxed">
-                {job.description}
+                {jobData.description}
               </p>
             </Card>
 
+            {/* Responsibilities */}
+            <Card className="p-6 border-border bg-card">
+              <h2 className="text-2xl font-semibold mb-4 text-foreground">
+                Responsabilidades
+              </h2>
+              <ul className="space-y-3">
+                {jobData.responsibilities.map((item, index) => (
+                  <li key={index} className="flex items-start gap-3">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
+                    <span className="text-muted-foreground">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+
             {/* Requirements */}
-            {job.requirements && (
-              <Card className="p-6 border-border bg-card">
-                <h2 className="text-2xl font-semibold mb-4 text-foreground">
-                  Requisitos
-                </h2>
-                <div className="text-muted-foreground whitespace-pre-line leading-relaxed">
-                  {job.requirements}
-                </div>
-              </Card>
-            )}
+            <Card className="p-6 border-border bg-card">
+              <h2 className="text-2xl font-semibold mb-4 text-foreground">
+                Requisitos
+              </h2>
+              <ul className="space-y-3 mb-6">
+                {jobData.requirements.map((item, index) => (
+                  <li key={index} className="flex items-start gap-3">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 flex-shrink-0" />
+                    <span className="text-muted-foreground">{item}</span>
+                  </li>
+                ))}
+              </ul>
 
+              <Separator className="my-4" />
 
-            {/* Contact Information */}
-            {(job.contactEmail || job.website) && (
-              <Card className="p-6 border-border bg-card">
-                <h2 className="text-2xl font-semibold mb-4 text-foreground">
-                  Informações de Contato
-                </h2>
-                <div className="space-y-3">
-                  {job.contactEmail && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground">Email:</span>
-                      <span className="text-foreground">{job.contactEmail}</span>
-                    </div>
-                  )}
-                  {job.website && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-muted-foreground">Website:</span>
-                      <a 
-                        href={job.website} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        {job.website}
-                      </a>
-                    </div>
-                  )}
-                </div>
-              </Card>
-            )}
+              <h3 className="text-lg font-semibold mb-3 text-foreground">
+                Diferenciais
+              </h3>
+              <ul className="space-y-3">
+                {jobData.niceToHave.map((item, index) => (
+                  <li key={index} className="flex items-start gap-3">
+                    <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground mt-2 flex-shrink-0" />
+                    <span className="text-muted-foreground">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+
+            {/* Benefits */}
+            <Card className="p-6 border-border bg-card">
+              <h2 className="text-2xl font-semibold mb-4 text-foreground">
+                Benefícios
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {jobData.benefits.map((benefit, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-2 text-muted-foreground"
+                  >
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
+                    <span>{benefit}</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            {/* About Company */}
+            <Card className="p-6 border-border bg-card">
+              <h2 className="text-2xl font-semibold mb-4 text-foreground">
+                Sobre a empresa
+              </h2>
+              <p className="text-muted-foreground whitespace-pre-line leading-relaxed">
+                {jobData.aboutCompany}
+              </p>
+            </Card>
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Apply Card - Sticky */}
             <Card className="p-6 border-border bg-card sticky top-24">
-              <Button 
-                className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold mb-4"
-                onClick={() => {
-                  if (user && id) {
-                    navigate(`/apply/${id}`);
-                  } else if (id) {
-                    navigate(`/login?jobId=${id}`);
-                  } else {
-                    navigate("/login");
-                  }
-                }}
-              >
-                Candidatar-se à oportunidade
+              <Button className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold mb-4">
+                Candidatar-se à vaga
               </Button>
               <p className="text-sm text-muted-foreground text-center">
                 Seu perfil será enviado diretamente para o recrutador
               </p>
             </Card>
 
-            {/* Job Info */}
+            {/* Company Info */}
             <Card className="p-6 border-border bg-card">
               <h3 className="text-lg font-semibold mb-4 text-foreground">
-                Informações da Oportunidade
+                Sobre {jobData.company}
               </h3>
               <div className="space-y-3 text-sm">
                 <div className="flex items-start gap-2">
-                  <Briefcase className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <Building2 className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-muted-foreground">Setor</p>
                     <p className="text-foreground font-medium">Tecnologia</p>
@@ -281,30 +266,38 @@ const JobDetail = () => {
                   <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-muted-foreground">Localização</p>
-                    <p className="text-foreground font-medium">{job.location}</p>
+                    <p className="text-foreground font-medium">São Paulo, SP</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Briefcase className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-muted-foreground">Tamanho</p>
+                    <p className="text-foreground font-medium">201-500 funcionários</p>
                   </div>
                 </div>
               </div>
             </Card>
 
-            {/* Job Stats */}
+            {/* Similar Jobs */}
             <Card className="p-6 border-border bg-card">
               <h3 className="text-lg font-semibold mb-4 text-foreground">
-                Estatísticas da Oportunidade
+                Vagas similares
               </h3>
-              <div className="space-y-3 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Publicada em</span>
-                  <span className="text-foreground font-medium">
-                    {new Date(job.postedAt).toLocaleDateString('pt-BR')}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Status</span>
-                  <span className="text-foreground font-medium">
-                    {job.status === 'active' ? 'Ativa' : 'Inativa'}
-                  </span>
-                </div>
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer"
+                  >
+                    <h4 className="font-medium text-foreground mb-1">
+                      Desenvolvedor Backend
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      Empresa XYZ • São Paulo
+                    </p>
+                  </div>
+                ))}
               </div>
             </Card>
           </div>
