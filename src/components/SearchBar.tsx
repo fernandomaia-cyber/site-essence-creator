@@ -1,13 +1,6 @@
-import { Search, MapPin, Laptop } from "lucide-react";
+import { Search, MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 export const SearchBar = () => {
   return (
@@ -37,22 +30,6 @@ export const SearchBar = () => {
                 placeholder="Localização"
                 className="pl-10 h-12 bg-input border-border text-foreground"
               />
-            </div>
-            <div className="w-full md:w-48">
-              <Select defaultValue="all">
-                <SelectTrigger className="h-12 bg-input border-border text-foreground">
-                  <div className="flex items-center gap-2">
-                    <Laptop className="w-5 h-5 text-muted-foreground" />
-                    <SelectValue />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os modos</SelectItem>
-                  <SelectItem value="onsite">Presencial</SelectItem>
-                  <SelectItem value="hybrid">Híbrido</SelectItem>
-                  <SelectItem value="remote">Remoto</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
             <Button className="h-12 px-8 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold">
               Buscar vagas
