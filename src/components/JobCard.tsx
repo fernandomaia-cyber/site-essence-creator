@@ -5,11 +5,9 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
 interface JobCardProps {
-  id: number;
+  id: string;
   title: string;
-  company: string;
   location: string;
-  type: string;
   department: string;
   postedDate: string;
   description: string;
@@ -18,9 +16,7 @@ interface JobCardProps {
 export const JobCard = ({
   id,
   title,
-  company,
   location,
-  type,
   department,
   postedDate,
   description,
@@ -38,16 +34,12 @@ export const JobCard = ({
               <h3 className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
                 {title}
               </h3>
-              <p className="text-muted-foreground">{company}</p>
             </div>
           </div>
           
           <div className="flex flex-wrap gap-2 mb-3">
             <Badge variant="secondary" className="bg-secondary text-secondary-foreground">
               {department}
-            </Badge>
-            <Badge variant="outline" className="border-border text-muted-foreground">
-              {type}
             </Badge>
           </div>
           
