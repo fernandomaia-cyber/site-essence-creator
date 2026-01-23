@@ -7,6 +7,8 @@ import { useJobs } from "@/contexts/JobsContext";
 
 const Index = () => {
   const { jobs, isLoading } = useJobs();
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [locationSearch, setLocationSearch] = useState<string>("");
   const [locationFilter, setLocationFilter] = useState<string[]>([]);
   const [requirementsFilter, setRequirementsFilter] = useState<string>("");
 
@@ -15,11 +17,22 @@ const Index = () => {
     return Array.isArray(jobs) ? jobs : [];
   }, [jobs]);
 
+  const handleSearch = () => {
+    // A busca é feita automaticamente pelo JobList através dos props
+    // Este handler pode ser usado para ações adicionais se necessário
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
       <main>
-        <SearchBar />
+        <SearchBar 
+          searchTerm={searchTerm}
+          locationSearch={locationSearch}
+          onSearchTermChange={setSearchTerm}
+          onLocationSearchChange={setLocationSearch}
+          onSearch={handleSearch}
+        />
         <section className="container mx-auto px-4 py-8">
           <div className="flex flex-col md:flex-row gap-6">
             <FilterSidebar 
@@ -30,7 +43,12 @@ const Index = () => {
               onRequirementsFilterChange={setRequirementsFilter}
             />
             <div className="flex-1">
-              <JobList />
+              <JobList 
+                searchTerm={searchTerm}
+                locationFilter={locationSearch}
+                locationFilterArray={locationFilter}
+                requirementsFilter={requirementsFilter}
+              />
             </div>
           </div>
         </section>

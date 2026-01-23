@@ -19,12 +19,15 @@ export const JobList = ({
   // Filtrar apenas Oportunidades ativas para o site público
   let activeJobs = jobs.filter(job => job.status === "active");
 
-  // Aplicar filtro de busca
-  if (searchTerm) {
-    activeJobs = activeJobs.filter(job => 
-      job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      job.description.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+  // Aplicar filtro de busca (título, descrição, requisitos)
+  if (searchTerm.trim()) {
+    const searchLower = searchTerm.toLowerCase();
+    activeJobs = activeJobs.filter(job => {
+      const titleMatch = job.title.toLowerCase().includes(searchLower);
+      const descriptionMatch = job.description?.toLowerCase().includes(searchLower) || false;
+      const requirementsMatch = job.requirements?.toLowerCase().includes(searchLower) || false;
+      return titleMatch || descriptionMatch || requirementsMatch;
+    });
   }
 
   // Aplicar filtro de localização
@@ -100,10 +103,14 @@ export const JobList = ({
             </svg>
           </div>
           <h3 className="text-lg font-semibold text-foreground mb-2">
-            Nenhuma oportunidade disponível no momento
+            {(searchTerm?.trim() || locationFilter?.trim() || locationFilterArray.length > 0 || requirementsFilter?.trim()) 
+              ? "Nenhuma oportunidade encontrada com os filtros aplicados"
+              : "Nenhuma oportunidade disponível no momento"}
           </h3>
           <p className="text-muted-foreground">
-            Volte em breve para ver novas oportunidades!
+            {(searchTerm?.trim() || locationFilter?.trim() || locationFilterArray.length > 0 || requirementsFilter?.trim())
+              ? "Tente ajustar os filtros de busca para ver mais resultados."
+              : "Volte em breve para ver novas oportunidades!"}
           </p>
         </div>
       ) : (

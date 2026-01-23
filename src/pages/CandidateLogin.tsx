@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Lock, User, ArrowLeft } from "lucide-react";
 import { Header } from "@/components/Header";
 import { auth } from "@/lib/firebase";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 
 const CandidateLogin = () => {
@@ -27,19 +27,46 @@ const CandidateLogin = () => {
     setError("");
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(auth, email, password);
+      
+      // Aguardar o estado de autenticação ser atualizado antes de redirecionar
+      // Isso evita problemas de race condition com o onAuthStateChanged no ApplyJob
+      await new Promise<void>((resolve) => {
+        // Verificar se o usuário já está disponível imediatamente
+        if (auth.currentUser) {
+          resolve();
+          return;
+        }
+        
+        // Caso contrário, aguardar o onAuthStateChanged
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+          if (user) {
+            unsubscribe();
+            resolve();
+          }
+        });
+        
+        // Timeout de segurança (3 segundos)
+        setTimeout(() => {
+          unsubscribe();
+          resolve();
+        }, 3000);
+      });
       
       toast({
         title: "Login realizado com sucesso!",
         description: "Redirecionando para o formulário de candidatura...",
       });
 
-      // Redirecionar para o formulário de candidatura
-      if (jobId) {
-        navigate(`/apply/${jobId}`);
-      } else {
-        navigate("/");
-      }
+      // Pequeno delay adicional para garantir que o estado foi propagado
+      setTimeout(() => {
+        // Redirecionar para o formulário de candidatura
+        if (jobId) {
+          navigate(`/apply/${jobId}`);
+        } else {
+          navigate("/");
+        }
+      }, 200);
     } catch (err: any) {
       console.error("Erro ao fazer login:", err);
       let errorMessage = "Erro ao fazer login. Tente novamente.";
@@ -48,8 +75,16 @@ const CandidateLogin = () => {
         errorMessage = "Usuário não encontrado. Faça o cadastro primeiro.";
       } else if (err.code === "auth/wrong-password") {
         errorMessage = "Senha incorreta. Tente novamente.";
+      } else if (err.code === "auth/invalid-credential") {
+        errorMessage = "Email ou senha incorretos. Verifique suas credenciais e tente novamente.";
       } else if (err.code === "auth/invalid-email") {
         errorMessage = "Email inválido.";
+      } else if (err.code === "auth/too-many-requests") {
+        errorMessage = "Muitas tentativas de login. Aguarde alguns minutos e tente novamente.";
+      } else if (err.code === "auth/user-disabled") {
+        errorMessage = "Esta conta foi desabilitada. Entre em contato com o suporte.";
+      } else if (err.message) {
+        errorMessage = err.message;
       }
       
       setError(errorMessage);
@@ -58,7 +93,6 @@ const CandidateLogin = () => {
         description: errorMessage,
         variant: "destructive",
       });
-    } finally {
       setIsLoading(false);
     }
   };

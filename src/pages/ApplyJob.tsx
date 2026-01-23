@@ -53,13 +53,31 @@ const ApplyJob = () => {
 
   useEffect(() => {
     // Verificar autenticação
+    let hasNavigated = false;
+    let timeoutId: NodeJS.Timeout | null = null;
+    
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      // Limpar timeout anterior se existir
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      
       if (!currentUser) {
-        // Se não estiver autenticado, redirecionar para login
-        navigate(`/login?jobId=${jobId}`);
+        // Aguardar um pouco antes de redirecionar para evitar race conditions
+        // Isso dá tempo para o estado de autenticação ser atualizado após o login
+        timeoutId = setTimeout(() => {
+          // Verificar novamente se ainda não está autenticado
+          if (auth.currentUser === null && !hasNavigated && jobId) {
+            hasNavigated = true;
+            navigate(`/login?jobId=${jobId}`);
+          }
+        }, 500);
         return;
       }
 
+      // Se o usuário está autenticado, não redirecionar
+      hasNavigated = true;
       setUser(currentUser);
       
       // Buscar perfil do candidato
@@ -98,7 +116,12 @@ const ApplyJob = () => {
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, [jobId, navigate]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
