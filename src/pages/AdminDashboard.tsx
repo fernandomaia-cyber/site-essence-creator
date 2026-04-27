@@ -112,7 +112,7 @@ const AdminDashboard = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "active":
-        return <Badge className="bg-green-100 text-green-800">Ativa</Badge>;
+        return <Badge className="bg-accent/20 text-foreground border border-accent/40">Ativa</Badge>;
       case "inactive":
         return <Badge className="bg-red-100 text-red-800">Inativa</Badge>;
       case "draft":
@@ -133,7 +133,7 @@ const AdminDashboard = () => {
       case "interview":
         return <Badge className="bg-purple-100 text-purple-800">Entrevista</Badge>;
       case "approved":
-        return <Badge className="bg-green-100 text-green-800">Aprovado</Badge>;
+        return <Badge className="bg-accent/20 text-foreground border border-accent/40">Aprovado</Badge>;
       case "homologated":
         return <Badge className="bg-emerald-100 text-emerald-800">Homologado</Badge>;
       case "rejected":
@@ -198,7 +198,7 @@ const AdminDashboard = () => {
               <img 
                 src="/portal/logo.svg" 
                 alt="DOT Digital Group" 
-                className="h-8 w-auto brightness-0 invert"
+                className="h-8 w-auto"
               />
               <h1 className="text-xl font-semibold text-foreground">
                 Painel Administrativo
@@ -227,10 +227,10 @@ const AdminDashboard = () => {
           <Card className="bg-card border-border">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-foreground">Oportunidades Ativas</CardTitle>
-              <Eye className="h-4 w-4 text-primary" />
+              <Eye className="h-4 w-4 text-accent" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-primary">{stats.active}</div>
+              <div className="text-2xl font-bold text-accent">{stats.active}</div>
             </CardContent>
           </Card>
           <Card className="bg-card border-border">
@@ -254,10 +254,10 @@ const AdminDashboard = () => {
           <Card className="bg-card border-border">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-foreground">Total Candidaturas</CardTitle>
-              <Users className="h-4 w-4 text-primary" />
+              <Users className="h-4 w-4 text-accent" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-primary">{stats.totalApplications}</div>
+              <div className="text-2xl font-bold text-accent">{stats.totalApplications}</div>
             </CardContent>
           </Card>
         </div>

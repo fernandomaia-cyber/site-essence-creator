@@ -28,7 +28,10 @@ export const SearchBar = ({
       <div className="container mx-auto max-w-4xl">
         <div className="text-center mb-8 animate-fade-in">
           <h2 className="text-4xl md:text-5xl font-bold mb-4 text-foreground">
-            Encontre sua próxima oportunidade
+            Encontre sua próxima <span className="relative inline-block">
+              oportunidade<span className="text-accent">.</span>
+              <span className="absolute -bottom-1 left-0 right-3 h-1 bg-accent/40 rounded-full" aria-hidden="true" />
+            </span>
           </h2>
           <p className="text-xl text-muted-foreground">
             Explore vagas em diversas áreas e localizações

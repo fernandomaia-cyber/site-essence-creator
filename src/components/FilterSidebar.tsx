@@ -43,7 +43,10 @@ export const FilterSidebar = ({
 
   return (
     <aside className="w-full md:w-64 bg-card rounded-xl p-6 border border-border h-fit sticky top-24">
-      <h3 className="text-lg font-semibold mb-4 text-foreground">Filtros</h3>
+      <h3 className="text-lg font-semibold mb-4 text-foreground flex items-center gap-2">
+        <span className="inline-block w-1.5 h-5 rounded-full bg-accent" aria-hidden="true" />
+        Filtros
+      </h3>
       
       <div className="space-y-6">
         {/* Filtro de Localização */}

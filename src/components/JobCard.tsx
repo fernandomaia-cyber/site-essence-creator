@@ -27,15 +27,16 @@ export const JobCard = ({
 }: JobCardProps) => {
   const navigate = useNavigate();
   return (
-    <Card className="p-6 hover:shadow-lg transition-all duration-300 border-border bg-card hover:border-primary/50 group">
+    <Card className="relative p-6 hover:shadow-lg transition-all duration-300 border-border bg-card hover:border-accent/60 group overflow-hidden">
+      <span className="absolute left-0 top-0 h-full w-1 bg-accent/0 group-hover:bg-accent transition-colors duration-300" aria-hidden="true" />
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <div className="flex-1">
           <div className="flex items-start gap-3 mb-3">
-            <div className="w-12 h-12 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
-              <Briefcase className="w-6 h-6 text-primary" />
+            <div className="w-12 h-12 rounded-lg bg-accent/15 flex items-center justify-center flex-shrink-0">
+              <Briefcase className="w-6 h-6 text-accent" />
             </div>
             <div>
-              <h3 className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
+              <h3 className="text-xl font-semibold text-foreground group-hover:text-accent transition-colors">
                 {title}
               </h3>
               {company && <p className="text-muted-foreground">{company}</p>}
@@ -43,7 +44,7 @@ export const JobCard = ({
           </div>
           
           <div className="flex flex-wrap gap-2 mb-3">
-            <Badge variant="secondary" className="bg-secondary text-secondary-foreground">
+            <Badge variant="secondary" className="bg-accent/15 text-foreground border border-accent/30">
               {department}
             </Badge>
             {type && (

@@ -75,13 +75,14 @@ const AdminLogin = () => {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-card border-border">
+      <Card className="w-full max-w-md bg-card border-border relative overflow-hidden">
+        <span className="absolute top-0 left-0 right-0 h-1 bg-accent" aria-hidden="true" />
         <CardHeader className="text-center">
           <div className="mx-auto mb-4">
             <img 
               src="/portal/logo.svg" 
               alt="DOT Digital Group" 
-              className="h-12 w-auto mx-auto brightness-0 invert"
+              className="h-12 w-auto mx-auto"
             />
           </div>
           <CardTitle className="text-2xl font-bold text-foreground">Área Administrativa</CardTitle>

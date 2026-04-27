@@ -2,89 +2,93 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* Design system DOT Digital Group.
+   Paleta inspirada na identidade visual do dot:
+   - Preto suave do logo (#0C0A08) como primary/foreground
+   - Verde-lima do "ponto" do logo (#88C125) como accent
+   - Branco como background, com cinzas neutros para superfícies e bordas
+   Todos os valores estão em HSL conforme convenção do shadcn/ui.
 */
 
 @layer base {
   :root {
-    --background: 0 0% 10%;
-    --foreground: 0 0% 98%;
+    --background: 220 22% 95%;
+    --foreground: 30 20% 4%;
 
-    --card: 0 0% 16%;
-    --card-foreground: 0 0% 98%;
+    --card: 0 0% 100%;
+    --card-foreground: 30 20% 4%;
 
-    --popover: 0 0% 16%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 30 20% 4%;
 
-    --primary: 142 76% 46%;
-    --primary-foreground: 0 0% 10%;
+    --primary: 30 20% 4%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 22%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 220 18% 92%;
+    --secondary-foreground: 30 20% 4%;
 
-    --muted: 0 0% 22%;
-    --muted-foreground: 0 0% 65%;
+    --muted: 220 20% 96%;
+    --muted-foreground: 220 9% 40%;
 
-    --accent: 142 76% 46%;
-    --accent-foreground: 0 0% 10%;
+    --accent: 78 70% 45%;
+    --accent-foreground: 30 20% 4%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 28%;
-    --input: 0 0% 20%;
-    --ring: 142 76% 46%;
+    --border: 220 14% 88%;
+    --input: 220 18% 94%;
+    --ring: 30 20% 4%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 12%;
-    --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 142 76% 46%;
-    --sidebar-primary-foreground: 0 0% 10%;
-    --sidebar-accent: 0 0% 18%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 0 0% 22%;
-    --sidebar-ring: 142 76% 46%;
+    --sidebar-background: 220 22% 95%;
+    --sidebar-foreground: 30 20% 4%;
+    --sidebar-primary: 30 20% 4%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 18% 92%;
+    --sidebar-accent-foreground: 30 20% 4%;
+    --sidebar-border: 220 14% 88%;
+    --sidebar-ring: 30 20% 4%;
   }
 
   .dark {
-    --background: 0 0% 10%;
+    --background: 30 20% 4%;
     --foreground: 0 0% 98%;
 
-    --card: 0 0% 16%;
+    --card: 30 10% 8%;
     --card-foreground: 0 0% 98%;
 
-    --popover: 0 0% 16%;
+    --popover: 30 10% 8%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 142 76% 46%;
-    --primary-foreground: 0 0% 10%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 30 20% 4%;
 
-    --secondary: 0 0% 22%;
+    --secondary: 30 6% 14%;
     --secondary-foreground: 0 0% 98%;
 
-    --muted: 0 0% 22%;
-    --muted-foreground: 0 0% 65%;
+    --muted: 30 6% 14%;
+    --muted-foreground: 30 6% 65%;
 
-    --accent: 142 76% 46%;
-    --accent-foreground: 0 0% 10%;
+    --accent: 78 70% 45%;
+    --accent-foreground: 30 20% 4%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 28%;
-    --input: 0 0% 20%;
-    --ring: 142 76% 46%;
-    
-    --sidebar-background: 0 0% 12%;
+    --border: 30 6% 18%;
+    --input: 30 6% 18%;
+    --ring: 78 70% 45%;
+
+    --sidebar-background: 30 10% 8%;
     --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 142 76% 46%;
-    --sidebar-primary-foreground: 0 0% 10%;
-    --sidebar-accent: 0 0% 18%;
+    --sidebar-primary: 0 0% 98%;
+    --sidebar-primary-foreground: 30 20% 4%;
+    --sidebar-accent: 30 6% 14%;
     --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 0 0% 22%;
-    --sidebar-ring: 142 76% 46%;
+    --sidebar-border: 30 6% 18%;
+    --sidebar-ring: 78 70% 45%;
   }
 }
 
@@ -94,6 +98,6 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
   }
 }

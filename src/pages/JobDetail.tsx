@@ -150,8 +150,8 @@ const JobDetail = () => {
             {/* Job Header */}
             <Card className="p-6 border-border bg-card">
               <div className="flex items-start gap-4 mb-4">
-                <div className="w-16 h-16 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
-                  <Briefcase className="w-8 h-8 text-primary" />
+                <div className="w-16 h-16 rounded-lg bg-accent/15 border border-accent/30 flex items-center justify-center flex-shrink-0">
+                  <Briefcase className="w-8 h-8 text-accent" />
                 </div>
                 <div className="flex-1">
                   <h1 className="text-3xl font-bold mb-2 text-foreground">
@@ -230,7 +230,7 @@ const JobDetail = () => {
                         href={job.website} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="text-primary hover:underline"
+                        className="text-accent hover:underline font-medium"
                       >
                         {job.website}
                       </a>

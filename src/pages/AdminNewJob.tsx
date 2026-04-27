@@ -141,7 +141,7 @@ const AdminNewJob = () => {
                 <img 
                   src="/portal/logo.svg" 
                   alt="DOT Digital Group" 
-                  className="h-6 w-auto brightness-0 invert"
+                  className="h-6 w-auto"
                 />
                 <h1 className="text-xl font-semibold text-foreground">
                   Nova Oportunidade
