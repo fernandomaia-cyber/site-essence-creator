@@ -8,8 +8,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Lock, User, Mail, Phone, ArrowLeft } from "lucide-react";
 import { Header } from "@/components/Header";
 import { auth, db } from "@/lib/firebase";
+import { candidatesCollection } from "@/lib/firestorePaths";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { collection, addDoc } from "firebase/firestore";
+import { addDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 
 const CandidateRegister = () => {
@@ -49,7 +50,7 @@ const CandidateRegister = () => {
       const user = userCredential.user;
 
       // Criar perfil do candidato no Firestore
-      await addDoc(collection(db, "candidates"), {
+      await addDoc(candidatesCollection(db), {
         userId: user.uid,
         name,
         email,

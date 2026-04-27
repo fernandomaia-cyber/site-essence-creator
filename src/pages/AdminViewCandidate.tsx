@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,12 +20,58 @@ import {
   Eye,
   LogOut
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useCandidates, Candidate } from "@/contexts/CandidatesContext";
 import { useJobs } from "@/contexts/JobsContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { storage } from "@/lib/firebase";
 import { ref, getDownloadURL } from "firebase/storage";
+
+type CandidateStatus = Candidate["status"];
+
+const EMAIL_TEMPLATES: Record<
+  CandidateStatus,
+  { subject: string; body: string }
+> = {
+  new: {
+    subject: "Recebemos sua candidatura",
+    body: `Olá, {candidateName}!\n\n Agradecemos o seu cadastro para a oportunidade de Fornecedor "{jobTitle}".\n\nSuas informações já fazem parte do nosso banco de fornecedores.\n\nAssim que tivermos uma demanda com o seu perfil, nosso time entrará em contato.\n\nAbraço,\nEquipe DOT Digital Group`,
+  },
+  technical_evaluation: {
+    subject: "Sua candidatura está em avaliação técnica",
+    body: `Olá! Como você está?\n\nAgora você está na etapa de avaliação técnica! 💚\n\nNa sequência, você receberá um e-mail com as instruções para a realização da avaliação técnica. O objetivo é conhecermos um pouco mais da sua entrega. \n\nVocê tem até 3 (três) dias para responder a avaliação através do e-mail recebido.\n\nQualquer dúvida ou necessidade de negociar o prazo, ficamos à disposição, ok?\n\nSucesso na realização da avaliação técnica e até logo! \n\nEquipe DOT ForHub`,
+  },
+  technical_analysis: {
+    subject: "Sua candidatura está em análise técnica",
+    body: `Olá, {candidateName}!\n\nSua candidatura para a vaga "{jobTitle}" está em análise técnica pela nossa equipe.\n\nAgradecemos sua paciência.\n\nAtenciosamente,\nEquipe DOT Digital Group`,
+  },
+  interview: {
+    subject: "Convite para entrevista - {jobTitle}",
+    body: "Olá, {candidateName}! Tudo bem?\n\nTô aqui pra dizer que você foi aprovado para a próxima etapa :)\n\nAgora teremos um bate-papo mais técnico.\n\nA conversa será para te conhecer um pouco mais, alinhar expectativas e tirar suas dúvidas.\n\nEsta conversa será remota, por vídeo chamada, e o link desse vídeo você receberá por e-mail em breve.\n\nNo horário combinado é só acessar o link que foi enviado à você por e-mail (por vezes o link da entrevista pode ter ido para a caixa de SPAM, pedimos para que confira lá também).\n\nCaso não seja possível participar ou tenha alguma dúvida, nos avise respondendo o e-mail que consta o link da vídeo chamada.\n\nEstamos à disposição!\n\nAbraços!\nEquipe DOT ForHub",
+  },
+  approved: {
+    subject: "Parabéns! Você foi aprovado(a) - {jobTitle}",
+    body: "Olá {candidateName}! Finalizamos a avaliação do seu perfil técnico para a oportunidade de Fornecedor Gestor de Biblioteca Virtual! Nas próximas semanas nossa equipe de Compras entrará em contato com você para dar continuidade ao processo, ok? Abraço, Equipe DOT ForHub 💚",
+  },
+  homologated: {
+    subject: "Candidatura homologada - {jobTitle}",
+    body: `Olá, {candidateName}!\n\nSua candidatura para a vaga "{jobTitle}" foi homologada.\n\nEm breve nossa equipe dará continuidade ao processo.\n\nAtenciosamente,\nEquipe DOT Digital Group`,
+  },
+  rejected: {
+    subject: "Retorno sobre sua candidatura - {jobTitle}",
+    body: `Olá, {candidateName}. Tudo bem? \n\nGostaríamos de agradecer por sua inscrição para a oportunidade de Fornecedor Gestor de Biblioteca Virtual.\n\n Obrigado pelo seu interesse em fazer parte do nosso time de fornecedores, ficamos muito felizes em ter pessoas como você com vontade de crescer conosco. \n\nDesta vez optamos por outro fornecedor considerando além dos requisitos da oportunidade, o projeto em que irá atuar. Mais uma vez, agradecemos e desejamos sucesso na sua trajetória! Abraços! Equipe DOT ForHub`,
+  },
+};
 
 const AdminViewCandidate = () => {
   const { id } = useParams<{ id: string }>();
@@ -35,6 +82,11 @@ const AdminViewCandidate = () => {
 
   const candidate = id ? getCandidateById(id) : null;
   const job = candidate?.jobId ? getJobById(candidate.jobId) : null;
+
+  const [emailModal, setEmailModal] = useState<{ newStatus: CandidateStatus } | null>(null);
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailBody, setEmailBody] = useState("");
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   if (!candidate) {
     return (
@@ -111,22 +163,64 @@ const AdminViewCandidate = () => {
     navigate("/admin");
   };
 
-  const handleStatusChange = async (newStatus: string) => {
+  const openEmailModal = async (newStatus: CandidateStatus) => {
     if (!candidate || candidate.status === newStatus) return;
-    
+
+    // Para "technical_analysis", atualiza o status direto (sem exigir envio de e-mail)
+    if (newStatus === "technical_analysis") {
+      try {
+        await updateCandidate(candidate.id, { status: newStatus });
+        toast({
+          title: "Status atualizado",
+          description: `O status foi alterado para "${getStatusLabel(newStatus)}".`,
+        });
+      } catch (error) {
+        console.error("Erro ao atualizar status:", error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível atualizar o status.",
+          variant: "destructive",
+        });
+      }
+      return;
+    }
+
+    const template = EMAIL_TEMPLATES[newStatus];
+    const jobTitle = job?.title ?? "a vaga";
+    const subject = template.subject.replace(/\{jobTitle\}/g, jobTitle);
+    const body = template.body
+      .replace(/\{candidateName\}/g, candidate.name)
+      .replace(/\{jobTitle\}/g, jobTitle);
+    setEmailSubject(subject);
+    setEmailBody(body);
+    setEmailModal({ newStatus });
+  };
+
+  const closeEmailModal = () => {
+    setEmailModal(null);
+    setEmailSubject("");
+    setEmailBody("");
+  };
+
+  const handleConfirmSendEmail = async () => {
+    if (!emailModal || !candidate) return;
+    setIsSendingEmail(true);
     try {
-      await updateCandidate(candidate.id, { status: newStatus as Candidate["status"] });
+      await updateCandidate(candidate.id, { status: emailModal.newStatus });
       toast({
-        title: "Status atualizado",
-        description: `O status do candidato "${candidate.name}" foi atualizado para "${getStatusLabel(newStatus)}".`,
+        title: "E-mail enviado e status atualizado",
+        description: `O e-mail foi enviado para ${candidate.name} e o status foi alterado para "${getStatusLabel(emailModal.newStatus)}".`,
       });
+      closeEmailModal();
     } catch (error) {
       console.error("Erro ao atualizar status:", error);
       toast({
-        title: "Erro ao atualizar status",
-        description: "Não foi possível atualizar o status. Tente novamente.",
+        title: "Erro",
+        description: "Não foi possível enviar o e-mail e atualizar o status.",
         variant: "destructive",
       });
+    } finally {
+      setIsSendingEmail(false);
     }
   };
 
@@ -208,8 +302,8 @@ const AdminViewCandidate = () => {
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-6">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full min-w-0">
+        <div className="space-y-6 min-w-0 max-w-full">
           {/* Cabeçalho do Candidato */}
           <Card className="bg-card border-border">
             <CardHeader>
@@ -294,6 +388,21 @@ const AdminViewCandidate = () => {
               </CardContent>
             </Card>
           )}
+
+          {/* Como ficou sabendo da vaga */}
+          <Card className="bg-card border-border">
+            <CardHeader>
+              <CardTitle className="flex items-center text-foreground">
+                <FileText className="h-5 w-5 mr-2" />
+                Como ficou sabendo da vaga
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-foreground whitespace-pre-wrap">
+                {candidate.howDidYouHearAboutJob || "Não informado"}
+              </p>
+            </CardContent>
+          </Card>
 
           {/* Notas */}
           {candidate.notes && (
@@ -390,18 +499,18 @@ const AdminViewCandidate = () => {
 
           {/* Campos Dinâmicos */}
           {job?.customFields && job.customFields.length > 0 && candidate?.customFieldsData && (
-            <Card className="bg-card border-border">
-              <CardHeader>
-                <CardTitle className="flex items-center text-foreground">
-                  <FileText className="h-5 w-5 mr-2" />
+            <Card className="bg-card border-border min-w-0 max-w-full overflow-hidden">
+              <CardHeader className="min-w-0">
+                <CardTitle className="flex items-center text-foreground min-w-0">
+                  <FileText className="h-5 w-5 mr-2 shrink-0" />
                   Campos Adicionais
                 </CardTitle>
                 <CardDescription className="text-muted-foreground">
                   Informações adicionais fornecidas pelo candidato
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
+              <CardContent className="min-w-0 max-w-full overflow-hidden">
+                <div className="space-y-4 min-w-0 max-w-full">
                   {job.customFields.map((field) => {
                     const fieldValue = candidate.customFieldsData?.[field.id];
                     if (fieldValue === undefined || fieldValue === null || fieldValue === "") {
@@ -409,12 +518,12 @@ const AdminViewCandidate = () => {
                     }
 
                     return (
-                      <div key={field.id} className="space-y-2">
+                      <div key={field.id} className="space-y-2 min-w-0 max-w-full">
                         <Label className="text-sm font-medium text-foreground">
                           {field.label}
                           {field.required && <span className="text-destructive ml-1">*</span>}
                         </Label>
-                        <div className="p-3 bg-secondary rounded-lg">
+                        <div className="p-3 bg-secondary rounded-lg min-w-0 max-w-full overflow-hidden">
                           {field.type === "boolean" ? (
                             <span className="text-foreground">
                               {fieldValue === true ? "Sim" : fieldValue === false ? "Não" : "Não informado"}
@@ -454,7 +563,12 @@ const AdminViewCandidate = () => {
                               </Button>
                             </div>
                           ) : (
-                            <p className="text-foreground whitespace-pre-wrap">{String(fieldValue)}</p>
+                            <p 
+                              className="text-foreground whitespace-pre-wrap w-full min-w-0 max-w-full overflow-hidden"
+                              style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}
+                            >
+                              {String(fieldValue)}
+                            </p>
                           )}
                         </div>
                       </div>
@@ -477,11 +591,11 @@ const AdminViewCandidate = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="text-center p-4 bg-primary/10 rounded-lg space-y-3">
                   <Label className="text-sm font-medium text-muted-foreground block">Status Atual</Label>
-                  <Select 
-                    value={candidate.status} 
-                    onValueChange={handleStatusChange}
+                  <Select
+                    value={emailModal ? emailModal.newStatus : candidate.status}
+                    onValueChange={(value: CandidateStatus) => openEmailModal(value)}
                   >
-                    <SelectTrigger className="bg-background border-border text-foreground">
+                    <SelectTrigger className="w-[200px] bg-background border-border text-foreground mx-auto">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -495,7 +609,7 @@ const AdminViewCandidate = () => {
                     </SelectContent>
                   </Select>
                   <div className="flex justify-center">
-                    {getStatusBadge(candidate.status)}
+                    {getStatusBadge(emailModal ? emailModal.newStatus : candidate.status)}
                   </div>
                 </div>
                 <div className="text-center p-4 bg-secondary rounded-lg">
@@ -509,6 +623,64 @@ const AdminViewCandidate = () => {
           </Card>
         </div>
       </div>
+
+      {/* Modal de envio de e-mail ao alterar status */}
+      <Dialog open={!!emailModal} onOpenChange={(open) => !open && closeEmailModal()}>
+        <DialogContent className="sm:max-w-[560px]">
+          <DialogHeader>
+            <DialogTitle>Enviar e-mail ao candidato</DialogTitle>
+            <DialogDescription>
+              {emailModal && candidate && (
+                <>
+                  Alteração de status para{" "}
+                  <strong>{getStatusLabel(emailModal.newStatus)}</strong> –{" "}
+                  {candidate.name}
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          {emailModal && candidate && (
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="email-subject">Assunto</Label>
+                <Input
+                  id="email-subject"
+                  value={emailSubject}
+                  onChange={(e) => setEmailSubject(e.target.value)}
+                  className="bg-input border-border text-foreground"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email-body">Mensagem</Label>
+                <Textarea
+                  id="email-body"
+                  value={emailBody}
+                  onChange={(e) => setEmailBody(e.target.value)}
+                  rows={8}
+                  className="bg-input border-border text-foreground resize-none"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={closeEmailModal}
+              className="border-border text-foreground"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={handleConfirmSendEmail}
+              disabled={!emailModal || isSendingEmail}
+            >
+              {isSendingEmail ? "Enviando..." : "Confirmar enviar e-mail"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

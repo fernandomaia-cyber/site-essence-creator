@@ -1,12 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { Job } from "@/hooks/useJobs";
 import { db } from "@/lib/firebase";
+import { dotJobDoc, dotJobsCollection } from "@/lib/firestorePaths";
 
 // Re-exportar Job para compatibilidade
 export type { Job };
 import {
-  collection,
-  doc,
   addDoc,
   updateDoc,
   deleteDoc,
@@ -80,8 +79,6 @@ interface JobsContextType {
 
 const JobsContext = createContext<JobsContextType | undefined>(undefined);
 
-const COLLECTION_NAME = "dot_jobs";
-
 // Converter documento do Firestore para Job
 const firestoreToJob = (docSnapshot: DocumentSnapshot<DocumentData>): Job => {
   const data = docSnapshot.data();
@@ -149,7 +146,7 @@ export const JobsProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     setIsLoading(true);
     
-    const jobsCollection = collection(db, COLLECTION_NAME);
+    const jobsCollection = dotJobsCollection(db);
     
     // Buscar todos os documentos sem ordenação (ordenaremos no cliente)
     const q = query(jobsCollection);
@@ -188,7 +185,7 @@ export const JobsProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const createJob = async (jobData: Omit<Job, 'id' | 'applications' | 'postedAt'>): Promise<Job> => {
     try {
-      const jobsCollection = collection(db, COLLECTION_NAME);
+      const jobsCollection = dotJobsCollection(db);
       const newJobData: Record<string, any> = {
         ...jobData,
         applications: 0,
@@ -233,7 +230,7 @@ export const JobsProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const updateJob = async (id: string, jobData: Partial<Job>): Promise<void> => {
     try {
-      const jobRef = doc(db, COLLECTION_NAME, id);
+      const jobRef = dotJobDoc(db, id);
       const updateData = jobToFirestore(jobData);
       await updateDoc(jobRef, updateData);
     } catch (error) {
@@ -244,7 +241,7 @@ export const JobsProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const deleteJob = async (id: string): Promise<void> => {
     try {
-      const jobRef = doc(db, COLLECTION_NAME, id);
+      const jobRef = dotJobDoc(db, id);
       await deleteDoc(jobRef);
     } catch (error) {
       console.error("Erro ao deletar job no Firestore:", error);

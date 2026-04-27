@@ -482,8 +482,9 @@ const AdminEditJob = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               {customFields.map((field, index) => (
-                <div key={field.id} className="flex gap-4 items-end p-4 border border-border rounded-lg">
-                  <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div key={field.id} className="flex gap-4 items-start p-4 border border-border rounded-lg">
+                  <div className="flex-1 space-y-4">
+                    {/* Primeira linha: Label do Campo */}
                     <div className="space-y-2">
                       <Label className="text-foreground">Label do Campo</Label>
                       <Input
@@ -494,44 +495,47 @@ const AdminEditJob = () => {
                           setCustomFields(updated);
                         }}
                         placeholder="Ex: Possui experiência com React?"
-                        className="bg-input border-border text-foreground"
+                        className="bg-input border-border text-foreground w-full"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-foreground">Tipo</Label>
-                      <Select
-                        value={field.type}
-                        onValueChange={(value: "text" | "boolean" | "file") => {
-                          const updated = [...customFields];
-                          updated[index].type = value;
-                          setCustomFields(updated);
-                        }}
-                      >
-                        <SelectTrigger className="bg-input border-border text-foreground">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="text">Campo de Texto</SelectItem>
-                          <SelectItem value="boolean">Campo Booleano (Sim/Não)</SelectItem>
-                          <SelectItem value="file">Upload de Arquivo</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id={`required-${field.id}`}
-                        checked={field.required || false}
-                        onChange={(e) => {
-                          const updated = [...customFields];
-                          updated[index].required = e.target.checked;
-                          setCustomFields(updated);
-                        }}
-                        className="h-4 w-4"
-                      />
-                      <Label htmlFor={`required-${field.id}`} className="text-foreground cursor-pointer">
-                        Obrigatório
-                      </Label>
+                    {/* Segunda linha: Tipo e Obrigatório */}
+                    <div className="flex flex-wrap gap-4 items-end">
+                      <div className="space-y-2">
+                        <Label className="text-foreground">Tipo</Label>
+                        <Select
+                          value={field.type}
+                          onValueChange={(value: "text" | "boolean" | "file") => {
+                            const updated = [...customFields];
+                            updated[index].type = value;
+                            setCustomFields(updated);
+                          }}
+                        >
+                          <SelectTrigger className="bg-input border-border text-foreground w-[200px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="text">Campo de Texto</SelectItem>
+                            <SelectItem value="boolean">Campo Booleano (Sim/Não)</SelectItem>
+                            <SelectItem value="file">Upload de Arquivo</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-center space-x-2 pb-2">
+                        <input
+                          type="checkbox"
+                          id={`required-${field.id}`}
+                          checked={field.required || false}
+                          onChange={(e) => {
+                            const updated = [...customFields];
+                            updated[index].required = e.target.checked;
+                            setCustomFields(updated);
+                          }}
+                          className="h-4 w-4"
+                        />
+                        <Label htmlFor={`required-${field.id}`} className="text-foreground cursor-pointer">
+                          Obrigatório
+                        </Label>
+                      </div>
                     </div>
                   </div>
                   <Button
@@ -541,7 +545,7 @@ const AdminEditJob = () => {
                     onClick={() => {
                       setCustomFields(customFields.filter((_, i) => i !== index));
                     }}
-                    className="border-destructive text-destructive hover:bg-destructive/10"
+                    className="border-destructive text-destructive hover:bg-destructive/10 shrink-0"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

@@ -1,8 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { db } from "@/lib/firebase";
 import {
-  collection,
-  doc,
+  jobApplicationDoc,
+  jobApplicationsCollection,
+} from "@/lib/firestorePaths";
+import {
   addDoc,
   updateDoc,
   deleteDoc,
@@ -35,6 +37,7 @@ export interface Candidate {
   candidateUserId?: string;
   sentForAnalysis?: boolean;
   customFieldsData?: Record<string, string | boolean>; // Valores dos campos dinâmicos (customField_${fieldId})
+  howDidYouHearAboutJob?: string;
 }
 
 interface CandidatesContextType {
@@ -48,8 +51,6 @@ interface CandidatesContextType {
 }
 
 const CandidatesContext = createContext<CandidatesContextType | undefined>(undefined);
-
-const APPLICATIONS_COLLECTION = "job_applications";
 
 // Converter documento do Firestore para Candidate
 const firestoreToCandidate = (docSnapshot: DocumentSnapshot<DocumentData>): Candidate => {
@@ -99,6 +100,7 @@ const firestoreToCandidate = (docSnapshot: DocumentSnapshot<DocumentData>): Cand
     candidateUserId: data.candidateUserId || "",
     sentForAnalysis: data.sentForAnalysis || false,
     customFieldsData: Object.keys(customFieldsData).length > 0 ? customFieldsData : undefined,
+    howDidYouHearAboutJob: data.howDidYouHearAboutJob || "",
   };
 
   // Validar campos obrigatórios
@@ -116,14 +118,14 @@ export const CandidatesProvider: React.FC<{ children: ReactNode }> = ({ children
   useEffect(() => {
     setIsLoading(true);
     
-    const applicationsCollection = collection(db, APPLICATIONS_COLLECTION);
+    const applicationsCollection = jobApplicationsCollection(db);
     const q = query(applicationsCollection);
 
     // Escutar mudanças em tempo real
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
-        console.log(`[CandidatesContext] Recebidos ${snapshot.size} documentos da coleção ${APPLICATIONS_COLLECTION}`);
+        console.log(`[CandidatesContext] Recebidos ${snapshot.size} documentos da coleção job_applications (dotgroup)`);
         const candidatesList: Candidate[] = [];
         snapshot.forEach((docSnapshot) => {
           try {
@@ -159,7 +161,7 @@ export const CandidatesProvider: React.FC<{ children: ReactNode }> = ({ children
 
   const createCandidate = async (candidateData: Omit<Candidate, 'id' | 'appliedAt'>): Promise<Candidate> => {
     try {
-      const applicationsCollection = collection(db, APPLICATIONS_COLLECTION);
+      const applicationsCollection = jobApplicationsCollection(db);
       const newCandidateData = {
         ...candidateData,
         appliedAt: Timestamp.now(),
@@ -195,7 +197,7 @@ export const CandidatesProvider: React.FC<{ children: ReactNode }> = ({ children
 
   const updateCandidate = async (id: string, candidateData: Partial<Candidate>): Promise<void> => {
     try {
-      const candidateRef = doc(db, APPLICATIONS_COLLECTION, id);
+      const candidateRef = jobApplicationDoc(db, id);
       const updateData = {
         ...candidateData,
         updatedAt: Timestamp.now(),
@@ -211,7 +213,7 @@ export const CandidatesProvider: React.FC<{ children: ReactNode }> = ({ children
 
   const deleteCandidate = async (id: string): Promise<void> => {
     try {
-      const candidateRef = doc(db, APPLICATIONS_COLLECTION, id);
+      const candidateRef = jobApplicationDoc(db, id);
       await deleteDoc(candidateRef);
     } catch (error) {
       console.error("Erro ao deletar candidato no Firestore:", error);
@@ -225,7 +227,7 @@ export const CandidatesProvider: React.FC<{ children: ReactNode }> = ({ children
 
   const getCandidatesByJobId = async (jobId: string): Promise<Candidate[]> => {
     try {
-      const applicationsCollection = collection(db, APPLICATIONS_COLLECTION);
+      const applicationsCollection = jobApplicationsCollection(db);
       const q = query(applicationsCollection, where("jobId", "==", jobId));
       const querySnapshot = await getDocs(q);
       

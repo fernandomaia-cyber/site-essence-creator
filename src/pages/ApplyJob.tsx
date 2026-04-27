@@ -12,7 +12,13 @@ import { useJobs } from "@/contexts/JobsContext";
 import { useCandidates } from "@/contexts/CandidatesContext";
 import { DynamicField } from "@/hooks/useJobs";
 import { auth, db, storage } from "@/lib/firebase";
-import { collection, query, where, getDocs, addDoc, updateDoc, doc, Timestamp } from "firebase/firestore";
+import {
+  candidateDoc,
+  candidatesCollection,
+  dotJobDoc,
+  jobApplicationsCollection,
+} from "@/lib/firestorePaths";
+import { query, where, getDocs, addDoc, updateDoc, Timestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useToast } from "@/hooks/use-toast";
 import { onAuthStateChanged, User } from "firebase/auth";
@@ -42,6 +48,7 @@ const ApplyJob = () => {
   const [experience, setExperience] = useState("");
   const [education, setEducation] = useState("");
   const [notes, setNotes] = useState("");
+  const [howDidYouHear, setHowDidYouHear] = useState("");
   const [resume, setResume] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -82,7 +89,7 @@ const ApplyJob = () => {
       
       // Buscar perfil do candidato
       try {
-        const candidatesRef = collection(db, "candidates");
+        const candidatesRef = candidatesCollection(db);
         const q = query(candidatesRef, where("userId", "==", currentUser.uid));
         const querySnapshot = await getDocs(q);
         
@@ -148,6 +155,12 @@ const ApplyJob = () => {
       return;
     }
 
+    if (!howDidYouHear) {
+      setError('O campo "Como ficou sabendo da vaga?" é obrigatório.');
+      setIsLoading(false);
+      return;
+    }
+
     // Validar campos dinâmicos obrigatórios
     if (job.customFields && job.customFields.length > 0) {
       for (const field of job.customFields) {
@@ -186,7 +199,7 @@ const ApplyJob = () => {
       
       if (!candidateProfile) {
         // Criar perfil do candidato se não existir
-        const candidatesRef = collection(db, "candidates");
+        const candidatesRef = candidatesCollection(db);
         const newCandidateDoc = await addDoc(candidatesRef, {
           userId: user.uid,
           name,
@@ -197,7 +210,7 @@ const ApplyJob = () => {
         candidateId = newCandidateDoc.id;
       } else if (name !== candidateProfile.name || email !== candidateProfile.email || phone !== candidateProfile.phone) {
         // Atualizar perfil se os dados foram alterados
-        const candidateRef = doc(db, "candidates", candidateProfile.id);
+        const candidateRef = candidateDoc(db, candidateProfile.id);
         await updateDoc(candidateRef, {
           name,
           email,
@@ -288,6 +301,7 @@ const ApplyJob = () => {
         experience: experience || "",
         education: education || "",
         notes: notes || "",
+        howDidYouHearAboutJob: howDidYouHear || "",
         status: "new",
         appliedAt: Timestamp.now(),
         resumeUrl: resumeUrl,
@@ -312,7 +326,7 @@ const ApplyJob = () => {
       }
 
       // Verificar se já existe candidatura para esta oportunidade
-      const applicationsRef = collection(db, "job_applications");
+      const applicationsRef = jobApplicationsCollection(db);
       const existingQuery = query(
         applicationsRef,
         where("candidateUserId", "==", user.uid),
@@ -335,7 +349,7 @@ const ApplyJob = () => {
       await addDoc(applicationsRef, applicationData);
 
       // Atualizar contador de candidaturas da oportunidade
-      const jobRef = doc(db, "dot_jobs", job.id);
+      const jobRef = dotJobDoc(db, job.id);
       await updateDoc(jobRef, {
         applications: (job.applications || 0) + 1
       });
@@ -487,6 +501,22 @@ const ApplyJob = () => {
                   value={education}
                   onChange={(e) => setEducation(e.target.value)}
                   className="bg-input border-border text-foreground min-h-[100px]"
+                />
+              </div>
+
+              {/* Como ficou sabendo da vaga */}
+              <div className="space-y-2">
+                <Label htmlFor="howDidYouHear" className="text-foreground">
+                  Como ficou sabendo da vaga? *
+                </Label>
+                <Input
+                  id="howDidYouHear"
+                  type="text"
+                  value={howDidYouHear}
+                  onChange={(e) => setHowDidYouHear(e.target.value)}
+                  placeholder="Ex: LinkedIn, indicação, site da empresa..."
+                  className="bg-input border-border text-foreground"
+                  required
                 />
               </div>
 

@@ -12,6 +12,7 @@ import {
   LogOut, 
   Plus, 
   Search, 
+  Copy,
   Edit, 
   Trash2, 
   Eye,
@@ -34,7 +35,7 @@ const AdminDashboard = () => {
   const [candidateSearchTerm, setCandidateSearchTerm] = useState("");
   const [candidateStatusFilter, setCandidateStatusFilter] = useState("all");
   const navigate = useNavigate();
-  const { jobs, isLoading, deleteJob } = useJobs();
+  const { jobs, isLoading, deleteJob, createJob } = useJobs();
   const { candidates, isLoading: isLoadingCandidates, deleteCandidate } = useCandidates();
   const { toast } = useToast();
 
@@ -68,6 +69,43 @@ const AdminDashboard = () => {
           variant: "destructive",
         });
       }
+    }
+  };
+
+  const handleCopyJob = async (id: string) => {
+    const job = jobs.find((j) => j.id === id);
+    if (!job) return;
+
+    const ok = window.confirm(
+      `Deseja copiar a oportunidade "${job.title}"?\n\nUma nova vaga será criada como rascunho.`
+    );
+    if (!ok) return;
+
+    try {
+      const copied = await createJob({
+        title: `${job.title} (Cópia)`,
+        location: job.location,
+        status: "draft",
+        description: job.description,
+        requirements: job.requirements || "",
+        contactEmail: job.contactEmail || "",
+        website: job.website || "",
+        customFields: job.customFields && job.customFields.length > 0 ? job.customFields : undefined,
+      });
+
+      toast({
+        title: "Vaga copiada com sucesso!",
+        description: `A vaga "${copied.title}" foi criada como rascunho.`,
+      });
+
+      navigate(`/admin/jobs/${copied.id}/edit`);
+    } catch (error) {
+      console.error("Erro ao copiar oportunidade:", error);
+      toast({
+        title: "Erro ao copiar oportunidade",
+        description: "Não foi possível copiar a vaga. Tente novamente.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -333,6 +371,15 @@ const AdminDashboard = () => {
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleCopyJob(job.id)}
+                                className="border-border text-foreground hover:bg-secondary"
+                                title="Copiar vaga"
+                              >
+                                <Copy className="h-4 w-4" />
+                              </Button>
                               <Button 
                                 variant="outline" 
                                 size="sm"
@@ -393,11 +440,13 @@ const AdminDashboard = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos os status</SelectItem>
-                      <SelectItem value="pending">Pendente</SelectItem>
-                      <SelectItem value="reviewed">Revisado</SelectItem>
-                      <SelectItem value="interviewed">Entrevistado</SelectItem>
-                      <SelectItem value="hired">Contratado</SelectItem>
-                      <SelectItem value="rejected">Rejeitado</SelectItem>
+                      <SelectItem value="new">Novo</SelectItem>
+                      <SelectItem value="technical_evaluation">Avaliação Técnica</SelectItem>
+                      <SelectItem value="technical_analysis">Análise Técnica</SelectItem>
+                      <SelectItem value="interview">Entrevista</SelectItem>
+                      <SelectItem value="approved">Aprovado</SelectItem>
+                      <SelectItem value="homologated">Homologado</SelectItem>
+                      <SelectItem value="rejected">Reprovado</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

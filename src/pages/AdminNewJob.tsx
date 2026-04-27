@@ -10,6 +10,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { ArrowLeft, Save, Eye, Plus, Trash2, LogOut } from "lucide-react";
 import { DynamicField } from "@/hooks/useJobs";
 import { useJobs } from "@/contexts/JobsContext";
@@ -36,6 +46,7 @@ const AdminNewJob = () => {
   const [error, setError] = useState("");
   const [locationType, setLocationType] = useState<"remoto" | "especifico">("remoto");
   const [customFields, setCustomFields] = useState<DynamicField[]>([]);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
   const {
     register,
@@ -53,6 +64,7 @@ const AdminNewJob = () => {
 
   const watchedStatus = watch("status");
   const watchedLocation = watch("location");
+  const watchedDescription = watch("description");
 
   const onSubmit = async (data: JobFormData) => {
     setIsLoading(true);
@@ -242,7 +254,50 @@ const AdminNewJob = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <Label htmlFor="description" className="text-foreground">Descrição *</Label>
+                <div className="flex items-center justify-between gap-3">
+                  <Label htmlFor="description" className="text-foreground">
+                    Descrição *
+                  </Label>
+                  <Dialog open={isDescriptionExpanded} onOpenChange={setIsDescriptionExpanded}>
+                    <DialogTrigger asChild>
+                      <Button type="button" variant="outline" size="sm" className="border-border">
+                        Expandir
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="w-[95vw] max-w-5xl h-[85vh] flex flex-col">
+                      <DialogHeader>
+                        <DialogTitle>Descrição da vaga</DialogTitle>
+                        <DialogDescription>
+                          Edite o texto em tela cheia. Ao fechar, o conteúdo permanece no formulário.
+                        </DialogDescription>
+                      </DialogHeader>
+
+                      <div className="flex-1 min-h-0">
+                        <Textarea
+                          value={watchedDescription || ""}
+                          onChange={(e) => {
+                            setValue("description", e.target.value, {
+                              shouldDirty: true,
+                              shouldTouch: true,
+                              shouldValidate: true,
+                            });
+                          }}
+                          placeholder="Descreva as principais responsabilidades e atividades da oportunidade..."
+                          className="bg-input border-border text-foreground h-full min-h-[50vh] resize-none"
+                        />
+                      </div>
+
+                      <DialogFooter className="sm:justify-between">
+                        <div className="text-xs text-muted-foreground">
+                          Dica: você pode colar uma descrição longa aqui.
+                        </div>
+                        <DialogClose asChild>
+                          <Button type="button">Concluir</Button>
+                        </DialogClose>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
                 <Textarea
                   id="description"
                   placeholder="Descreva as principais responsabilidades e atividades da oportunidade..."

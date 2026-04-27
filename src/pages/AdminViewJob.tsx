@@ -22,12 +22,73 @@ import {
   LogOut
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useJobs } from "@/contexts/JobsContext";
 import { useCandidates, Candidate } from "@/contexts/CandidatesContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp, query, where, getDocs } from "firebase/firestore";
+import { suppliersCollection } from "@/lib/firestorePaths";
+import { addDoc, serverTimestamp, query, where, getDocs } from "firebase/firestore";
+
+type CandidateStatus = Candidate["status"];
+
+const EMAIL_TEMPLATES: Record<
+  CandidateStatus,
+  { subject: string; body: string }
+> = {
+  new: {
+    subject: "Recebemos sua candidatura",
+    body: `Olá, {candidateName}!\n\n Agradecemos o seu cadastro para a oportunidade de Fornecedor "{jobTitle}".\n\nSuas informações já fazem parte do nosso banco de fornecedores.\n\nAssim que tivermos uma demanda com o seu perfil, nosso time entrará em contato.\n\nAbraço,\nEquipe DOT Digital Group`,
+  },
+  technical_evaluation: {
+    subject: "Sua candidatura está em avaliação técnica",
+    body: `Olá! Como você está?\n\nAgora você está na etapa de avaliação técnica! 💚\n\nNa sequência, você receberá um e-mail com as instruções para a realização da avaliação técnica. O objetivo é conhecermos um pouco mais da sua entrega. \n\nVocê tem até 3 (três) dias para responder a avaliação através do e-mail recebido.\n\nQualquer dúvida ou necessidade de negociar o prazo, ficamos à disposição, ok?\n\nSucesso na realização da avaliação técnica e até logo! \n\nEquipe DOT ForHub`,
+  },
+  technical_analysis: {
+    subject: "Sua candidatura está em análise técnica",
+    body: `Olá, {candidateName}!\n\nSua candidatura para a vaga "{jobTitle}" está em análise técnica pela nossa equipe.\n\nAgradecemos sua paciência.\n\nAtenciosamente,\nEquipe DOT Digital Group`,
+  },
+  interview: {
+    subject: "Convite para entrevista - {jobTitle}",
+    body: "Olá, {candidateName}! Tudo bem?\n\nTô aqui pra dizer que você foi aprovado para a próxima etapa :)\n\nAgora teremos um bate-papo mais técnico.\n\nA conversa será para te conhecer um pouco mais, alinhar expectativas e tirar suas dúvidas.\n\nEsta conversa será remota, por vídeo chamada, e o link desse vídeo você receberá por e-mail em breve.\n\nNo horário combinado é só acessar o link que foi enviado à você por e-mail (por vezes o link da entrevista pode ter ido para a caixa de SPAM, pedimos para que confira lá também).\n\nCaso não seja possível participar ou tenha alguma dúvida, nos avise respondendo o e-mail que consta o link da vídeo chamada.\n\nEstamos à disposição!\n\nAbraços!\nEquipe DOT ForHub",
+  },
+  approved: {
+    subject: "Parabéns! Você foi aprovado(a) - {jobTitle}",
+    body: "Olá {candidateName}! Finalizamos a avaliação do seu perfil técnico para a oportunidade de Fornecedor Gestor de Biblioteca Virtual! Nas próximas semanas nossa equipe de Compras entrará em contato com você para dar continuidade ao processo, ok? Abraço, Equipe DOT ForHub 💚",
+  },
+  homologated: {
+    subject: "Candidatura homologada - {jobTitle}",
+    body: `Olá, {candidateName}!\n\nSua candidatura para a vaga "{jobTitle}" foi homologada.\n\nEm breve nossa equipe dará continuidade ao processo.\n\nAtenciosamente,\nEquipe DOT Digital Group`,
+  },
+  rejected: {
+    subject: "Retorno sobre sua candidatura - {jobTitle}",
+    body: `Olá, {candidateName}. Tudo bem? \n\nGostaríamos de agradecer por sua inscrição para a oportunidade de Fornecedor Gestor de Biblioteca Virtual.\n\n Obrigado pelo seu interesse em fazer parte do nosso time de fornecedores, ficamos muito felizes em ter pessoas como você com vontade de crescer conosco. \n\nDesta vez optamos por outro fornecedor considerando além dos requisitos da oportunidade, o projeto em que irá atuar. Mais uma vez, agradecemos e desejamos sucesso na sua trajetória! Abraços! Equipe DOT ForHub`,
+  },
+};
+
+const getStatusLabel = (status: CandidateStatus): string => {
+  const labels: Record<CandidateStatus, string> = {
+    new: "Novo",
+    technical_evaluation: "Avaliação Técnica",
+    technical_analysis: "Análise Técnica",
+    interview: "Entrevista",
+    approved: "Aprovado",
+    homologated: "Homologado",
+    rejected: "Reprovado",
+  };
+  return labels[status] ?? status;
+};
 
 const AdminViewJob = () => {
   const { id } = useParams<{ id: string }>();
@@ -37,6 +98,13 @@ const AdminViewJob = () => {
   const { toast } = useToast();
   const [jobCandidates, setJobCandidates] = useState<Candidate[]>([]);
   const [isLoadingCandidates, setIsLoadingCandidates] = useState(false);
+  const [emailModal, setEmailModal] = useState<{
+    candidate: Candidate;
+    newStatus: CandidateStatus;
+  } | null>(null);
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailBody, setEmailBody] = useState("");
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   const job = id ? getJobById(id) : null;
 
@@ -122,31 +190,92 @@ const AdminViewJob = () => {
     }
   };
 
-  const handleStatusChange = async (candidate: Candidate, newStatus: Candidate["status"]) => {
+  const openEmailModal = async (candidate: Candidate, newStatus: CandidateStatus) => {
     if (candidate.status === newStatus) return;
-    
+
+    // Para "technical_analysis", atualiza o status direto (sem exigir envio de e-mail)
+    if (newStatus === "technical_analysis") {
+      try {
+        await updateCandidate(candidate.id, { status: newStatus });
+        toast({
+          title: "Status atualizado",
+          description: `O status de ${candidate.name} foi alterado para "${getStatusLabel(newStatus)}".`,
+        });
+        await loadCandidates();
+      } catch (error) {
+        console.error("Erro ao atualizar status:", error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível atualizar o status.",
+          variant: "destructive",
+        });
+      }
+      return;
+    }
+
+    const template = EMAIL_TEMPLATES[newStatus];
+    const jobTitle = job?.title ?? "a vaga";
+    const subject = template.subject.replace(/\{jobTitle\}/g, jobTitle);
+    const body = template.body
+      .replace(/\{candidateName\}/g, candidate.name)
+      .replace(/\{jobTitle\}/g, jobTitle);
+    setEmailSubject(subject);
+    setEmailBody(body);
+    setEmailModal({ candidate, newStatus });
+  };
+
+  const closeEmailModal = () => {
+    setEmailModal(null);
+    setEmailSubject("");
+    setEmailBody("");
+  };
+
+  const handleConfirmSendEmail = async () => {
+    if (!emailModal) return;
+    setIsSendingEmail(true);
     try {
-      await updateCandidate(candidate.id, { status: newStatus });
-      toast({
-        title: "Status atualizado",
-        description: `O status do candidato "${candidate.name}" foi atualizado.`,
+      // Enviar e-mail via backend (Resend) chamando diretamente a Cloud Function deployada
+      const response = await fetch(`/api/send-email`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          to: emailModal.candidate.email,
+          subject: emailSubject,
+          text: emailBody,
+        }),
       });
-      // Recarregar lista de candidatos para refletir a mudança
+
+      if (!response.ok) {
+        throw new Error("Falha ao enviar e-mail");
+      }
+
+      await updateCandidate(emailModal.candidate.id, {
+        status: emailModal.newStatus,
+      });
+      toast({
+        title: "E-mail enviado e status atualizado",
+        description: `O e-mail foi enviado para ${emailModal.candidate.name} e o status foi alterado para "${getStatusLabel(emailModal.newStatus)}".`,
+      });
       await loadCandidates();
+      closeEmailModal();
     } catch (error) {
       console.error("Erro ao atualizar status:", error);
       toast({
-        title: "Erro ao atualizar status",
-        description: "Não foi possível atualizar o status. Tente novamente.",
+        title: "Erro",
+        description: "Não foi possível enviar o e-mail e atualizar o status.",
         variant: "destructive",
       });
+    } finally {
+      setIsSendingEmail(false);
     }
   };
 
   const handleSendForAnalysis = async (candidate: Candidate) => {
     try {
       // Verificar se já existe um supplier com este email
-      const suppliersRef = collection(db, "suppliers");
+      const suppliersRef = suppliersCollection(db);
       const existingSupplierQuery = query(
         suppliersRef,
         where("email", "==", candidate.email)
@@ -434,8 +563,14 @@ const AdminViewJob = () => {
                           </TableCell>
                           <TableCell>
                             <Select
-                              value={candidate.status}
-                              onValueChange={(value: Candidate["status"]) => handleStatusChange(candidate, value)}
+                              value={
+                                emailModal?.candidate.id === candidate.id
+                                  ? emailModal.newStatus
+                                  : candidate.status
+                              }
+                              onValueChange={(value: CandidateStatus) =>
+                                openEmailModal(candidate, value)
+                              }
                             >
                               <SelectTrigger className="w-[200px]">
                                 <SelectValue />
@@ -494,6 +629,64 @@ const AdminViewJob = () => {
           </Card>
         </div>
       </div>
+
+      {/* Modal de envio de e-mail ao alterar status */}
+      <Dialog open={!!emailModal} onOpenChange={(open) => !open && closeEmailModal()}>
+        <DialogContent className="sm:max-w-[560px]">
+          <DialogHeader>
+            <DialogTitle>Enviar e-mail ao candidato</DialogTitle>
+            <DialogDescription>
+              {emailModal && (
+                <>
+                  Alteração de status para{" "}
+                  <strong>{getStatusLabel(emailModal.newStatus)}</strong> –{" "}
+                  {emailModal.candidate.name}
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          {emailModal && (
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="email-subject">Assunto</Label>
+                <Input
+                  id="email-subject"
+                  value={emailSubject}
+                  onChange={(e) => setEmailSubject(e.target.value)}
+                  className="bg-input border-border text-foreground"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email-body">Mensagem</Label>
+                <Textarea
+                  id="email-body"
+                  value={emailBody}
+                  onChange={(e) => setEmailBody(e.target.value)}
+                  rows={8}
+                  className="bg-input border-border text-foreground resize-none"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={closeEmailModal}
+              className="border-border text-foreground"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={handleConfirmSendEmail}
+              disabled={!emailModal || isSendingEmail}
+            >
+              {isSendingEmail ? "Enviando..." : "Confirmar enviar e-mail"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
